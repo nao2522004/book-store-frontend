@@ -1,35 +1,42 @@
-// Toast
+import { Link } from 'react-router-dom';
+
 export function Toast({ toasts }) {
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 max-w-sm">
       {toasts.map(t => (
-        <div key={t.id} className={`px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium animate-slide-in
-          ${t.type === 'error' ? 'bg-red-500' : t.type === 'warning' ? 'bg-yellow-500' : 'bg-green-500'}`}>
-          {t.message}
+        <div
+          key={t.id}
+          className={`px-5 py-3.5 rounded-[1px] border shadow-md text-xs font-bold uppercase tracking-wider animate-slide-in relative flex items-center gap-2 bg-[#FAF5EC] ${t.type === 'error'
+            ? 'border-red-800/60 text-red-900 bg-red-50/30'
+            : t.type === 'warning'
+              ? 'border-[#8B6508]/60 text-[#8B6508] bg-amber-50/30'
+              : 'border-emerald-800/60 text-emerald-950 bg-emerald-50/30'
+            }`}
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          <span>{t.type === 'error' ? '✕' : t.type === 'warning' ? '❖' : '✓'}</span>
+          <span className="font-serif tracking-normal normal-case font-normal text-stone-700">{t.message}</span>
         </div>
       ))}
     </div>
   );
 }
 
-// Spinner
 export function Spinner({ size = 'md' }) {
-  const s = { sm: 'w-4 h-4', md: 'w-8 h-8', lg: 'w-12 h-12' }[size];
+  const s = { sm: 'w-5 h-5 border-2', md: 'w-8 h-8 border-[3px]', lg: 'w-12 h-12 border-4' }[size];
   return (
-    <div className={`${s} border-4 border-amber-200 border-t-amber-700 rounded-full animate-spin`} />
+    <div className={`${s} border-[#D4C4A8] border-t-[#8B6508] rounded-full animate-spin`} />
   );
 }
 
-// Loading page
 export function LoadingPage() {
   return (
-    <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="min-h-[60vh] bg-[#FAF5EC] flex items-center justify-center">
       <Spinner size="lg" />
     </div>
   );
 }
 
-// Pagination
 export function Pagination({ data, onPageChange }) {
   if (!data || data.totalPages <= 1) return null;
   const { number: page, totalPages } = data;
@@ -39,81 +46,126 @@ export function Pagination({ data, onPageChange }) {
   const end = Math.min(totalPages - 1, page + 2);
   for (let i = start; i <= end; i++) pages.push(i);
 
+  const btnClass = "h-9 px-3 border border-[#D4C4A8] text-xs font-bold uppercase tracking-wider text-[#2C2114] hover:text-[#FAF5EC] relative overflow-hidden transition-all duration-300 before:absolute before:inset-0 before:bg-[#2C2114] before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-250 disabled:opacity-30 disabled:before:hidden disabled:hover:text-[#2C2114] flex items-center justify-center rounded-[1px]";
+
   return (
-    <div className="flex items-center justify-center gap-1 mt-8">
+    <div className="flex items-center justify-center gap-1.5 mt-10 select-none" style={{ fontFamily: "'Cinzel', serif" }}>
       <button
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
-        className="px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-amber-100 text-amber-800 transition-colors"
+        className={btnClass}
       >
-        ← Trước
+        <span className="relative z-10">← Trước</span>
       </button>
-      {start > 0 && <><button onClick={() => onPageChange(0)} className="px-3 py-2 rounded-lg text-sm hover:bg-amber-100 text-amber-800">1</button><span className="text-gray-400">...</span></>}
+
+      {start > 0 && (
+        <>
+          <button
+            onClick={() => onPageChange(0)}
+            className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
+          >
+            1
+          </button>
+          <span className="text-stone-400 px-1 text-xs">...</span>
+        </>
+      )}
+
       {pages.map(p => (
         <button
           key={p}
           onClick={() => onPageChange(p)}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${p === page ? 'bg-amber-700 text-white' : 'hover:bg-amber-100 text-amber-800'}`}
+          className={`w-9 h-9 text-xs font-bold transition-all rounded-[1px] ${p === page
+            ? 'bg-[#8B6508] border border-[#8B6508] text-[#FAF5EC]'
+            : 'border border-[#D4C4A8]/60 text-stone-600 hover:border-[#2C2114] hover:text-[#2C2114]'
+            }`}
         >
           {p + 1}
         </button>
       ))}
-      {end < totalPages - 1 && <><span className="text-gray-400">...</span><button onClick={() => onPageChange(totalPages - 1)} className="px-3 py-2 rounded-lg text-sm hover:bg-amber-100 text-amber-800">{totalPages}</button></>}
+
+      {end < totalPages - 1 && (
+        <>
+          <span className="text-stone-400 px-1 text-xs">...</span>
+          <button
+            onClick={() => onPageChange(totalPages - 1)}
+            className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+
       <button
         disabled={data.last}
         onClick={() => onPageChange(page + 1)}
-        className="px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-amber-100 text-amber-800 transition-colors"
+        className={btnClass}
       >
-        Sau →
+        <span className="relative z-10">Sau →</span>
       </button>
     </div>
   );
 }
 
-// Modal
 export function Modal({ open, onClose, title, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-bold text-gray-800">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="absolute inset-0 bg-[#2C2114]/60 backdrop-blur-[2px]" onClick={onClose} />
+
+      <div className="relative bg-[#FAF5EC] border-2 border-[#2C2114] rounded-[1px] shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-1">
+        <div className="absolute inset-1 border border-[#8B6508]/10 pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between p-5 border-b border-[#D4C4A8]/60">
+            <h2 className="text-base font-serif font-bold text-[#140E0A] uppercase tracking-wider" style={{ fontFamily: "'Playfair Display', serif" }}>
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-stone-400 hover:text-red-800 text-xl transition-colors focus:outline-none"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-6">{children}</div>
         </div>
-        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 }
 
-// Error message
 export function ErrorMsg({ message }) {
   if (!message) return null;
-  return <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{message}</div>;
-}
-
-// Empty state
-export function Empty({ icon = '📦', message = 'Không có dữ liệu' }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-      <span className="text-5xl mb-3">{icon}</span>
-      <p className="text-sm">{message}</p>
+    <div className="bg-[#FAF5EC] border border-red-800/40 text-red-900 px-4 py-3 rounded-[1px] text-xs font-serif italic flex items-center gap-2">
+      <span className="text-red-800 font-sans not-italic font-bold">✕</span> {message}
     </div>
   );
 }
 
-// Star rating
+export function Empty({ icon = '❖', message = 'Không có dữ liệu' }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-stone-400 border border-dashed border-[#D4C4A8]/60 rounded-[1px] bg-[#FAF5EC]/50 relative">
+      <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
+      <span className="text-3xl mb-3 text-[#A8967E]">{icon}</span>
+      <p className="text-xs font-serif italic text-stone-500" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+        {message}
+      </p>
+    </div>
+  );
+}
+
 export function StarRating({ value = 0, onChange, readonly = false }) {
   return (
-    <div className="flex gap-1">
-      {[1,2,3,4,5].map(s => (
+    <div className="flex gap-1 select-none">
+      {[1, 2, 3, 4, 5].map(s => (
         <button
           key={s}
           type="button"
           disabled={readonly}
           onClick={() => onChange?.(s)}
-          className={`text-xl ${s <= value ? 'text-yellow-400' : 'text-gray-300'} ${!readonly ? 'hover:text-yellow-400 transition-colors cursor-pointer' : ''}`}
+          className={`text-lg focus:outline-none leading-none ${s <= value ? 'text-[#8B6508]' : 'text-stone-300'
+            } ${!readonly ? 'hover:text-[#A67B1E] transition-colors cursor-pointer' : ''}`}
         >
           ★
         </button>
