@@ -16,11 +16,12 @@ export default function BooksPage() {
   const [books, setBooks] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+
   const [filters, setFilters] = useState({
     keyword: searchParams.get('keyword') || '',
     categoryId: searchParams.get('categoryId') || '',
     sort: 'createdAt,desc',
-    page: 0,
+    page: 1,
     size: 12,
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,7 +35,7 @@ export default function BooksPage() {
     try {
       const [sortBy, sortDir] = (f.sort || 'createdAt,desc').split(',');
       const params = {
-        page: f.page + 1,
+        page: f.page,
         size: f.size,
         sortBy,
         sortDir,
@@ -56,12 +57,12 @@ export default function BooksPage() {
     const kw = searchParams.get('keyword');
     const cat = searchParams.get('categoryId');
     if (kw !== undefined || cat !== undefined) {
-      setFilters(f => ({ ...f, keyword: kw || '', categoryId: cat || '', page: 0 }));
+      setFilters(f => ({ ...f, keyword: kw || '', categoryId: cat || '', page: 1 }));
     }
   }, [searchParams]);
 
   const setFilter = (key, value) => {
-    setFilters(f => ({ ...f, [key]: value, page: 0 }));
+    setFilters(f => ({ ...f, [key]: value, page: 1 }));
   };
 
   const Sidebar = () => (
@@ -119,8 +120,9 @@ export default function BooksPage() {
 
   const paginationData = books ? {
     ...books,
-    number: (books.page || 1) - 1,
+    number: books.page || 1,
     last: !books.hasNext,
+    first: !books.hasPrevious,
     totalPages: books.totalPages,
   } : null;
 
