@@ -175,7 +175,7 @@ export function OrderDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-          {/* Address */}
+          {/* Address — B2: backend trả fullName/street/province (không phải recipientName/address/city) */}
           <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
             <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
             <h2 className="text-xs uppercase tracking-widest font-extrabold text-[#140E0A] mb-4 border-b border-[#D4C4A8]/40 pb-2" style={{ fontFamily: "'Cinzel', serif" }}>
@@ -184,17 +184,17 @@ export function OrderDetailPage() {
             {order.address && (
               <div className="text-xs sm:text-sm space-y-1.5 relative z-10">
                 <p className="font-bold text-[#2C2114] uppercase tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                  {order.address.recipientName}
+                  {order.address.fullName}
                 </p>
                 <p className="text-[#8B6508] font-mono">{order.address.phone}</p>
                 <p className="text-stone-600 font-serif leading-relaxed" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                  {order.address.address}, {order.address.ward}, {order.address.district}, {order.address.city}
+                  {order.address.street}, {order.address.ward}, {order.address.district}, {order.address.province}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Payment */}
+          {/* Payment — B2: backend trả subtotal (không phải subtotalAmount) */}
           <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
             <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
             <h2 className="text-xs uppercase tracking-widest font-extrabold text-[#140E0A] mb-4 border-b border-[#D4C4A8]/40 pb-2" style={{ fontFamily: "'Cinzel', serif" }}>
@@ -203,7 +203,7 @@ export function OrderDetailPage() {
             <div className="text-xs uppercase tracking-wider font-bold text-stone-600 space-y-2 relative z-10" style={{ fontFamily: "'Cinzel', serif" }}>
               <div className="flex justify-between items-center">
                 <span>Nguyên ngân tinh</span>
-                <span className="text-[#2C2114] font-sans font-normal text-xs">{formatPrice(order.subtotalAmount)}</span>
+                <span className="text-[#2C2114] font-sans font-normal text-xs">{formatPrice(order.subtotal)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between items-center text-emerald-700">

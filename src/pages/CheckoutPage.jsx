@@ -20,9 +20,11 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // ─── FIX address fields: backend dùng fullName/street/province ───────────
+
+  // ─── ĐÃ FIX: Khởi tạo kèm trạng thái isDefault ───────────
   const [newAddr, setNewAddr] = useState({
     fullName: '', phone: '', street: '', province: '', district: '', ward: '',
+    isDefault: false
   });
   const [showNewAddr, setShowNewAddr] = useState(false);
 
@@ -35,7 +37,6 @@ export default function CheckoutPage() {
     }).catch(() => { });
   }, []);
 
-  // ─── FIX 5: truyền subtotal (totalPrice) vào couponAPI.validate() ────────
   const validateCoupon = async () => {
     setCouponError('');
     setCouponData(null);
@@ -51,7 +52,6 @@ export default function CheckoutPage() {
   const discount = couponData?.discountAmount || 0;
   const finalPrice = Math.max(0, totalPrice - discount);
 
-  // ─── FIX 2: POST /orders/checkout với paymentMethod bắt buộc ─────────────
   const handleOrder = async () => {
     if (!selectedAddress) {
       setError('Vui lòng định đoạt địa sở thụ thư');
@@ -75,14 +75,19 @@ export default function CheckoutPage() {
     }
   };
 
+  // ─── ĐÃ FIX: Ép kiểu dữ liệu an toàn trước khi bắn API ───────────
   const handleAddAddress = async (e) => {
     e.preventDefault();
     try {
-      const res = await addressAPI.create(newAddr);
+      const payload = {
+        ...newAddr,
+        isDefault: !!newAddr.isDefault
+      };
+      const res = await addressAPI.create(payload);
       setAddresses(a => [...a, res.data]);
       setSelectedAddress(res.data.id);
       setShowNewAddr(false);
-      setNewAddr({ fullName: '', phone: '', street: '', province: '', district: '', ward: '' });
+      setNewAddr({ fullName: '', phone: '', street: '', province: '', district: '', ward: '', isDefault: false });
     } catch (err) {
       setError(err.message);
     }
@@ -194,6 +199,25 @@ export default function CheckoutPage() {
                       />
                     </div>
                   ))}
+
+                  {/* ─── ĐÃ FIX: Thêm UI Checkbox chọn mặc định địa sở ─── */}
+                  <div className="col-span-2 flex items-center gap-2 py-1 relative z-10">
+                    <input
+                      type="checkbox"
+                      id="isDefaultCheckbox"
+                      checked={newAddr.isDefault || false}
+                      onChange={e => setNewAddr(a => ({ ...a, [f.key || 'isDefault']: e.target.checked }))}
+                      className="accent-[#8B6508] cursor-pointer"
+                    />
+                    <label
+                      htmlFor="isDefaultCheckbox"
+                      className="text-xs font-serif italic text-stone-600 cursor-pointer user-select-none"
+                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                    >
+                      Đặt địa sở này làm định ước mặc định
+                    </label>
+                  </div>
+
                   <div className="col-span-2 flex gap-4 pt-3">
                     <button
                       type="submit"
@@ -247,11 +271,9 @@ export default function CheckoutPage() {
             {/* ── Coupon ── */}
             <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
-
               <h2 className="text-xs uppercase tracking-widest font-extrabold text-[#2C2114] mb-4" style={{ fontFamily: "'Cinzel', serif" }}>
                 🎫 Tiết Giảm Minh Tờ (Coupon)
               </h2>
-
               <div className="flex gap-4 relative z-10">
                 <input
                   type="text"
@@ -277,11 +299,9 @@ export default function CheckoutPage() {
             {/* ── Ghi chú ── */}
             <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
-
               <h2 className="text-xs uppercase tracking-widest font-extrabold text-[#2C2114] mb-3" style={{ fontFamily: "'Cinzel', serif" }}>
                 📝 Bút Tích Đính Kèm (Ghi chú)
               </h2>
-
               <textarea
                 value={note}
                 onChange={e => setNote(e.target.value)}
