@@ -30,12 +30,44 @@ const request = async (method, path, body = null, params = null) => {
   return data;
 };
 
+const decodeJwt = (token) => {
+  try {
+    const payload = token.split(".")[1];
+    // base64url → base64 → decode
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+    const claims = JSON.parse(json);
+    const roles = (claims.roles || []).map((r) =>
+      r.startsWith("ROLE_") ? r : `ROLE_${r}`,
+    );
+    return {
+      id: claims.userId,
+      email: claims.sub,
+      name: claims.name || claims.sub,
+      roles,
+    };
+  } catch {
+    return null;
+  }
+};
+
 // Auth
 export const authAPI = {
   login: (body) => request("POST", "/auth/login", body),
   register: (body) => request("POST", "/auth/register", body),
   logout: () => request("POST", "/auth/logout"),
-  me: () => request("GET", "/books"),
+  me: () => {
+    const token = getToken();
+    if (!token) return Promise.reject(new Error("No token"));
+    const user = decodeJwt(token);
+    if (!user) return Promise.reject(new Error("Invalid token"));
+    return Promise.resolve({ data: user });
+  },
   changePassword: (body) => request("PUT", "/auth/change-password", body),
 };
 
@@ -43,7 +75,6 @@ export const authAPI = {
 export const bookAPI = {
   getAll: (params) => request("GET", "/books", null, params),
   getById: (id) => request("GET", `/books/${id}`),
-  search: (params) => request("GET", "/books/search", null, params),
   create: (body) => request("POST", "/books", body),
   update: (id, body) => request("PUT", `/books/${id}`, body),
   delete: (id) => request("DELETE", `/books/${id}`),
@@ -87,15 +118,16 @@ export const cartAPI = {
 
 // Orders
 export const orderAPI = {
-  create: (body) => request("POST", "/orders", body),
-  getMyOrders: (params) => request("GET", "/orders/my-orders", null, params),
+  create: (body) => request("POST", "/orders/checkout", body),
+  getMyOrders: (params) => request("GET", "/orders", null, params),
   getById: (id) => request("GET", `/orders/${id}`),
-  cancel: (id) => request("PUT", `/orders/${id}/cancel`),
+  cancel: (id) => request("PATCH", `/orders/${id}/cancel`),
 };
 
 // Coupons
 export const couponAPI = {
-  validate: (code) => request("GET", "/coupons/validate", null, { code }),
+  validate: (code, subtotal) =>
+    request("GET", "/coupons/preview", null, { code, subtotal }),
 };
 
 // Address
@@ -104,7 +136,7 @@ export const addressAPI = {
   create: (body) => request("POST", "/addresses", body),
   update: (id, body) => request("PUT", `/addresses/${id}`, body),
   delete: (id) => request("DELETE", `/addresses/${id}`),
-  setDefault: (id) => request("PUT", `/addresses/${id}/default`),
+  setDefault: (id) => request("PATCH", `/addresses/${id}/default`),
 };
 
 // Reviews
