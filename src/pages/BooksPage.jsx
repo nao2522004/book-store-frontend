@@ -32,13 +32,17 @@ export default function BooksPage() {
   const fetchBooks = useCallback(async (f) => {
     setLoading(true);
     try {
-      const params = { page: f.page, size: f.size, sort: f.sort };
+      const [sortBy, sortDir] = (f.sort || 'createdAt,desc').split(',');
+      const params = {
+        page: f.page + 1,
+        size: f.size,
+        sortBy,
+        sortDir,
+      };
       if (f.keyword) params.keyword = f.keyword;
       if (f.categoryId) params.categoryId = f.categoryId;
 
-      const res = f.keyword
-        ? await bookAPI.search(params)
-        : await bookAPI.getAll(params);
+      const res = await bookAPI.getAll(params);
       setBooks(res.data);
     } catch (_) {
     } finally {
@@ -112,6 +116,13 @@ export default function BooksPage() {
       </div>
     </div>
   );
+
+  const paginationData = books ? {
+    ...books,
+    number: (books.page || 1) - 1,
+    last: !books.hasNext,
+    totalPages: books.totalPages,
+  } : null;
 
   return (
     <div className="bg-[#FAF5EC] min-h-screen text-[#2C2114] selection:bg-[#E6CE9A]/50 pb-20">
@@ -199,7 +210,10 @@ export default function BooksPage() {
                 </div>
 
                 <div className="mt-12 pt-6 border-t border-[#D4C4A8]/40">
-                  <Pagination data={books} onPageChange={p => setFilters(f => ({ ...f, page: p }))} />
+                  <Pagination
+                    data={paginationData}
+                    onPageChange={p => setFilters(f => ({ ...f, page: p }))}
+                  />
                 </div>
               </>
             )}

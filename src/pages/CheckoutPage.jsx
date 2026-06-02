@@ -17,9 +17,13 @@ export default function CheckoutPage() {
   const [couponData, setCouponData] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [note, setNote] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('COD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [newAddr, setNewAddr] = useState({ recipientName: '', phone: '', address: '', city: '', district: '', ward: '' });
+  // ─── FIX address fields: backend dùng fullName/street/province ───────────
+  const [newAddr, setNewAddr] = useState({
+    fullName: '', phone: '', street: '', province: '', district: '', ward: '',
+  });
   const [showNewAddr, setShowNewAddr] = useState(false);
 
   useEffect(() => {
@@ -31,11 +35,12 @@ export default function CheckoutPage() {
     }).catch(() => { });
   }, []);
 
+  // ─── FIX 5: truyền subtotal (totalPrice) vào couponAPI.validate() ────────
   const validateCoupon = async () => {
     setCouponError('');
     setCouponData(null);
     try {
-      const res = await couponAPI.validate(couponCode);
+      const res = await couponAPI.validate(couponCode, totalPrice);
       if (res.data?.isValid) setCouponData(res.data);
       else setCouponError(res.data?.errorMessage || 'Mã sức giảm bất hợp lệ');
     } catch (err) {
@@ -46,6 +51,7 @@ export default function CheckoutPage() {
   const discount = couponData?.discountAmount || 0;
   const finalPrice = Math.max(0, totalPrice - discount);
 
+  // ─── FIX 2: POST /orders/checkout với paymentMethod bắt buộc ─────────────
   const handleOrder = async () => {
     if (!selectedAddress) {
       setError('Vui lòng định đoạt địa sở thụ thư');
@@ -56,9 +62,9 @@ export default function CheckoutPage() {
     try {
       const res = await orderAPI.create({
         addressId: selectedAddress,
+        paymentMethod,
         couponCode: couponData ? couponCode : undefined,
-        note,
-        items: cart?.items?.map(i => ({ bookId: i.bookId, quantity: i.quantity })),
+        note: note || undefined,
       });
       await clearCart();
       navigate(`/orders/${res.data.id}`, { state: { success: true } });
@@ -76,7 +82,7 @@ export default function CheckoutPage() {
       setAddresses(a => [...a, res.data]);
       setSelectedAddress(res.data.id);
       setShowNewAddr(false);
-      setNewAddr({ recipientName: '', phone: '', address: '', city: '', district: '', ward: '' });
+      setNewAddr({ fullName: '', phone: '', street: '', province: '', district: '', ward: '' });
     } catch (err) {
       setError(err.message);
     }
@@ -94,6 +100,14 @@ export default function CheckoutPage() {
     </div>
   );
 
+  const PAYMENT_OPTIONS = [
+    { value: 'COD', label: '💵 Thanh toán khi nhận hàng (COD)' },
+    { value: 'BANKING', label: '🏦 Chuyển khoản ngân hàng' },
+    { value: 'MOMO', label: '💜 Ví MoMo' },
+    { value: 'ZALOPAY', label: '💙 ZaloPay' },
+    { value: 'VNPAY', label: '🔴 VNPay' },
+  ];
+
   return (
     <div className="bg-[#FAF5EC] min-h-screen text-[#2C2114] selection:bg-[#E6CE9A]/50 pb-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
@@ -106,6 +120,7 @@ export default function CheckoutPage() {
 
           <div className="lg:col-span-2 space-y-6">
 
+            {/* ── Địa chỉ ── */}
             <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
 
@@ -132,10 +147,10 @@ export default function CheckoutPage() {
                     />
                     <div className="text-xs sm:text-sm flex-1">
                       <p className="font-bold text-[#2C2114] uppercase tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                        {addr.recipientName} <span className="text-[#A8967E] font-mono tracking-normal px-1">·</span> {addr.phone}
+                        {addr.fullName} <span className="text-[#A8967E] font-mono tracking-normal px-1">·</span> {addr.phone}
                       </p>
                       <p className="text-stone-600 font-serif mt-1" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                        {addr.address}, {addr.ward}, {addr.district}, {addr.city}
+                        {addr.street}, {addr.ward}, {addr.district}, {addr.province}
                       </p>
                       {addr.isDefault && (
                         <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold text-[#8B6508] bg-[#8B6508]/10 px-1.5 py-0.5 mt-2" style={{ fontFamily: "'Cinzel', serif" }}>
@@ -160,12 +175,12 @@ export default function CheckoutPage() {
               {showNewAddr && (
                 <form onSubmit={handleAddAddress} className="mt-6 grid grid-cols-2 gap-4 relative z-10 border-t border-[#D4C4A8]/40 pt-6">
                   {[
-                    { key: 'recipientName', label: 'Danh tính thụ nhân', col: 2 },
+                    { key: 'fullName', label: 'Danh tính thụ nhân', col: 2 },
                     { key: 'phone', label: 'Liên lạc minh số', col: 1 },
-                    { key: 'city', label: 'Tỉnh / Thành thành', col: 1 },
+                    { key: 'province', label: 'Tỉnh / Thành thành', col: 1 },
                     { key: 'district', label: 'Quận / Huyện phủ', col: 1 },
                     { key: 'ward', label: 'Phường / Xã hạt', col: 1 },
-                    { key: 'address', label: 'Chi tiết lộ trình địa sở', col: 2 },
+                    { key: 'street', label: 'Chi tiết lộ trình địa sở', col: 2 },
                   ].map(f => (
                     <div key={f.key} className={f.col === 2 ? 'col-span-2' : ''}>
                       <label className="block text-[10px] uppercase tracking-wider font-bold text-stone-500 mb-1" style={{ fontFamily: "'Cinzel', serif" }}>
@@ -200,6 +215,36 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            {/* ── Phương thức thanh toán ── */}
+            <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
+              <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
+              <h2 className="text-xs uppercase tracking-widest font-extrabold text-[#2C2114] mb-4" style={{ fontFamily: "'Cinzel', serif" }}>
+                💳 Phương Thức Thanh Toán
+              </h2>
+              <div className="space-y-2 relative z-10">
+                {PAYMENT_OPTIONS.map(opt => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-[1px] border cursor-pointer transition-all ${paymentMethod === opt.value
+                      ? 'border-[#8B6508] bg-[#8B6508]/5'
+                      : 'border-[#D4C4A8]/60 hover:border-[#8B6508]/40'
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={opt.value}
+                      checked={paymentMethod === opt.value}
+                      onChange={() => setPaymentMethod(opt.value)}
+                      className="accent-[#8B6508]"
+                    />
+                    <span className="text-sm font-serif text-[#2C2114]">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Coupon ── */}
             <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
 
@@ -229,6 +274,7 @@ export default function CheckoutPage() {
               {couponData && <p className="text-emerald-700 text-xs font-extrabold uppercase tracking-wider mt-2.5 pl-1" style={{ fontFamily: "'Cinzel', serif" }}>✓ Đã trừ khấu {formatPrice(couponData.discountAmount)}</p>}
             </div>
 
+            {/* ── Ghi chú ── */}
             <div className="bg-[#FAF5EC] border border-[#D4C4A8] p-6 shadow-sm relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/5 pointer-events-none" />
 
@@ -247,6 +293,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* ── Summary ── */}
           <div className="lg:col-span-1">
             <div className="bg-[#FAF5EC] border-2 border-[#2C2114]/80 p-6 sticky top-28 shadow-md relative">
               <div className="absolute inset-1.5 border border-[#8B6508]/10 pointer-events-none" />
@@ -289,7 +336,6 @@ export default function CheckoutPage() {
               {error && <div className="mt-3"><ErrorMsg message={error} /></div>}
 
               <div className="pt-6">
-                {/* Nút Khởi sự đặt hàng với hiệu ứng trượt màu nghệ thuật từ dưới lên */}
                 <button
                   onClick={handleOrder}
                   disabled={loading}
