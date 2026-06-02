@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { formatPrice, PLACEHOLDER_BOOK } from '../../utils';
+import { formatPrice, getDiscountPercent, PLACEHOLDER_BOOK } from '../../utils';
 import { useCart } from '../../context/CartContext';
 import { useState } from 'react';
 
@@ -7,6 +7,9 @@ export default function BookCard({ book }) {
   const { addItem } = useCart();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+
+  // B2: tính discountPercent ở client vì backend không trả trường này
+  const discountPercent = getDiscountPercent(book);
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
@@ -36,12 +39,12 @@ export default function BookCard({ book }) {
           onError={e => { e.target.src = PLACEHOLDER_BOOK; }}
         />
 
-        {book.discountPercent > 0 && (
+        {discountPercent > 0 && (
           <span
             className="absolute top-2 left-2 bg-[#8B6508] text-[#FAF5EC] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[1px] shadow-sm z-20"
             style={{ fontFamily: "'Cinzel', serif" }}
           >
-            -{book.discountPercent}%
+            -{discountPercent}%
           </span>
         )}
 

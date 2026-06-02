@@ -76,7 +76,8 @@ export default function CartPage() {
 
                   <Link to={`/books/${item.bookId}`} className="flex-shrink-0 border border-[#D4C4A8]/60 p-1.5 bg-white aspect-[3/4] w-20">
                     <img
-                      src={item.coverImageUrl || PLACEHOLDER_BOOK}
+                      // B2: backend trả bookCoverUrl (không phải coverImageUrl)
+                      src={item.bookCoverUrl || PLACEHOLDER_BOOK}
                       alt={item.bookTitle}
                       className="w-full h-full object-cover"
                       onError={e => { e.target.src = PLACEHOLDER_BOOK; }}
@@ -92,13 +93,13 @@ export default function CartPage() {
                       >
                         {item.bookTitle}
                       </Link>
+                      {/* B2: backend trả unitPrice (không phải price) */}
                       <p className="text-xs uppercase tracking-wider font-bold text-[#8B6508]" style={{ fontFamily: "'Cinzel', serif" }}>
-                        {formatPrice(item.price)}
+                        {formatPrice(item.unitPrice)}
                       </p>
                     </div>
 
                     <div className="flex items-end justify-between pt-4 mt-2 border-t border-[#D4C4A8]/30">
-                      {/* Bộ tăng giảm số lượng cao cấp */}
                       <div className="flex items-center border border-[#D4C4A8] bg-[#FAF5EC] h-8 px-0.5 rounded-[1px]">
                         <button
                           onClick={() => item.quantity > 1 ? updateItem(item.bookId, item.quantity - 1) : removeItem(item.bookId)}
@@ -118,8 +119,9 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex items-center gap-5">
+                        {/* B2: dùng unitPrice */}
                         <span className="font-bold text-sm text-[#2C2114]" style={{ fontFamily: "'Cinzel', serif" }}>
-                          {formatPrice(item.price * item.quantity)}
+                          {formatPrice(item.unitPrice * item.quantity)}
                         </span>
                         <button
                           onClick={() => removeItem(item.bookId)}
@@ -170,7 +172,6 @@ export default function CartPage() {
                 </div>
 
                 <div className="pt-6 space-y-4">
-                  {/* Nút hành động chính với hiệu ứng mực loang từ dưới lên */}
                   <button
                     onClick={() => navigate('/checkout')}
                     className="relative w-full h-12 bg-transparent text-[#2C2114] border border-[#2C2114] font-bold text-xs uppercase tracking-[0.2em] rounded-[1px] overflow-hidden transition-all duration-350 before:absolute before:inset-0 before:bg-[#2C2114] before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300 before:ease-out hover:text-[#FAF5EC] flex items-center justify-center z-10 focus:outline-none"

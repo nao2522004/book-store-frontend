@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { bookAPI, reviewAPI } from '../api';
 import { useCart } from '../context/CartContext';
-import { formatPrice, formatDate, PLACEHOLDER_BOOK } from '../utils';
+import { formatPrice, formatDate, getDiscountPercent, PLACEHOLDER_BOOK } from '../utils';
 import { Spinner, StarRating, Empty, ErrorMsg } from '../components/common';
 
 export default function BookDetailPage() {
@@ -69,6 +69,10 @@ export default function BookDetailPage() {
   if (!book) return <div className="max-w-2xl mx-auto px-4 py-16"><ErrorMsg message={error || 'Không tìm thấy tác phẩm cổ điển này.'} /></div>;
 
   const displayPrice = book.discountPrice && book.discountPrice < book.price ? book.discountPrice : book.price;
+  // B2: tính discountPercent ở client vì backend không trả trường này
+  const discountPercent = getDiscountPercent(book);
+  // B2: backend trả publishedDate (datetime string), không có publishedYear
+  const publishedYear = book.publishedDate ? new Date(book.publishedDate).getFullYear() : null;
 
   return (
     <div className="bg-[#FAF5EC] min-h-screen selection:bg-[#E6CE9A]/50 text-[#2C2114] pb-20">
@@ -130,10 +134,11 @@ export default function BookDetailPage() {
                     <span className="text-[#2C2114]">{book.publisher.name}</span>
                   </p>
                 )}
-                {book.publishedYear && (
+                {/* B2: dùng publishedDate thay vì publishedYear */}
+                {publishedYear && (
                   <p className="flex items-center gap-2">
                     <span className="text-[#A8967E] min-w-[100px]">Niên đại XB:</span>
-                    <span className="text-[#2C2114]">{book.publishedYear}</span>
+                    <span className="text-[#2C2114]">{publishedYear}</span>
                   </p>
                 )}
                 {book.isbn && (
@@ -159,9 +164,12 @@ export default function BookDetailPage() {
                     <span className="text-lg text-[#A8967E] line-through font-medium" style={{ fontFamily: "'Cinzel', serif" }}>
                       {formatPrice(book.price)}
                     </span>
-                    <span className="bg-[#8B6508] text-[#FAF5EC] text-[10px] font-extrabold px-2 py-0.5 uppercase tracking-wider rounded-[1px]" style={{ fontFamily: "'Cinzel', serif" }}>
-                      -{book.discountPercent}% Tiết giảm
-                    </span>
+                    {/* B2: dùng discountPercent đã tính ở client */}
+                    {discountPercent > 0 && (
+                      <span className="bg-[#8B6508] text-[#FAF5EC] text-[10px] font-extrabold px-2 py-0.5 uppercase tracking-wider rounded-[1px]" style={{ fontFamily: "'Cinzel', serif" }}>
+                        -{discountPercent}% Tiết giảm
+                      </span>
+                    )}
                   </>
                 )}
               </div>
