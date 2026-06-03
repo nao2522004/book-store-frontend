@@ -7,7 +7,7 @@ import { Spinner, Pagination } from '../components/common';
 export function OrdersPage() {
   const [orders, setOrders] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     setLoading(true);

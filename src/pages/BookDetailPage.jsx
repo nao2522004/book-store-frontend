@@ -25,7 +25,7 @@ export default function BookDetailPage() {
       try {
         const [bookRes, revRes] = await Promise.all([
           bookAPI.getById(id),
-          reviewAPI.getByBook(id, { page: 0, size: 10 }).catch(() => null),
+          reviewAPI.getByBook(id, { page: 1, size: 10 }).catch(() => null),
         ]);
         setBook(bookRes.data);
         setReviews(revRes?.data);
@@ -56,7 +56,7 @@ export default function BookDetailPage() {
     setSubmitting(true);
     try {
       await reviewAPI.create({ bookId: Number(id), ...reviewForm });
-      const revRes = await reviewAPI.getByBook(id, { page: 0, size: 10 });
+      const revRes = await reviewAPI.getByBook(id, { page: 1, size: 10 });
       setReviews(revRes.data);
       setReviewForm({ rating: 5, comment: '' });
     } catch (_) {
