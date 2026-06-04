@@ -2,6 +2,11 @@ const BASE_URL = "http://localhost:8080";
 
 const getToken = () => localStorage.getItem("accessToken");
 
+const setToken = (token) => {
+  if (token) localStorage.setItem("accessToken", token);
+  else localStorage.removeItem("accessToken");
+};
+
 const headers = (isJson = true) => {
   const h = {};
   if (isJson) h["Content-Type"] = "application/json";
@@ -10,7 +15,45 @@ const headers = (isJson = true) => {
   return h;
 };
 
-const request = async (method, path, body = null, params = null) => {
+let refreshPromise = null;
+
+const refreshAccessToken = async () => {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: "POST",
+      headers: headers(),
+      credentials: "include",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setToken(null);
+      throw new Error(data.message || "Phiên đăng nhập đã hết hạn");
+    }
+    setToken(data.data.accessToken);
+    return data.data.accessToken;
+  })();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+};
+
+const AUTH_PATHS = new Set([
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/logout",
+]);
+
+const request = async (
+  method,
+  path,
+  body = null,
+  params = null,
+  { retried = false, signal } = {},
+) => {
   let url = `${BASE_URL}${path}`;
   if (params) {
     const q = new URLSearchParams(
@@ -20,12 +63,32 @@ const request = async (method, path, body = null, params = null) => {
     );
     if ([...q].length) url += `?${q}`;
   }
+
   const res = await fetch(url, {
     method,
     headers: headers(),
     body: body ? JSON.stringify(body) : undefined,
+    credentials: "include",
+    signal,
   });
-  const data = await res.json();
+
+  const data = await res.json().catch(() => ({}));
+
+  if (
+    res.status === 401 &&
+    !retried &&
+    !AUTH_PATHS.has(path) &&
+    getToken()
+  ) {
+    try {
+      await refreshAccessToken();
+      return request(method, path, body, params, { retried: true, signal });
+    } catch (err) {
+      setToken(null);
+      throw err;
+    }
+  }
+
   if (!res.ok) throw new Error(data.message || "Request failed");
   return data;
 };
@@ -33,7 +96,6 @@ const request = async (method, path, body = null, params = null) => {
 const decodeJwt = (token) => {
   try {
     const payload = token.split(".")[1];
-    // base64url → base64 → decode
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
     const json = decodeURIComponent(
       atob(base64)
@@ -56,10 +118,10 @@ const decodeJwt = (token) => {
   }
 };
 
-// Auth
 export const authAPI = {
   login: (body) => request("POST", "/auth/login", body),
   register: (body) => request("POST", "/auth/register", body),
+  refresh: () => request("POST", "/auth/refresh"),
   logout: () => request("POST", "/auth/logout"),
   me: () => {
     const token = getToken();
@@ -71,43 +133,69 @@ export const authAPI = {
   changePassword: (body) => request("PUT", "/auth/change-password", body),
 };
 
-// Books
 export const bookAPI = {
-  getAll: (params) => request("GET", "/books", null, params),
-  getById: (id) => request("GET", `/books/${id}`),
-  create: (body) => request("POST", "/books", body),
-  update: (id, body) => request("PUT", `/books/${id}`, body),
-  delete: (id) => request("DELETE", `/books/${id}`),
+  getAll: (params, options) => request("GET", "/books", null, params, options),
+  getById: (id, options) => request("GET", `/books/${id}`, null, null, options),
 };
 
-// Categories
 export const categoryAPI = {
-  getAll: (params) => request("GET", "/categories", null, params),
-  getById: (id) => request("GET", `/categories/${id}`),
-  create: (body) => request("POST", "/categories", body),
-  update: (id, body) => request("PUT", `/categories/${id}`, body),
-  delete: (id) => request("DELETE", `/categories/${id}`),
+  getAll: (params, options) =>
+    request("GET", "/categories", null, params, options),
+  getById: (id, options) =>
+    request("GET", `/categories/${id}`, null, null, options),
 };
 
-// Authors
 export const authorAPI = {
-  getAll: (params) => request("GET", "/authors", null, params),
-  getById: (id) => request("GET", `/authors/${id}`),
-  create: (body) => request("POST", "/authors", body),
-  update: (id, body) => request("PUT", `/authors/${id}`, body),
-  delete: (id) => request("DELETE", `/authors/${id}`),
+  getAll: (params, options) => request("GET", "/authors", null, params, options),
+  getById: (id, options) =>
+    request("GET", `/authors/${id}`, null, null, options),
 };
 
-// Publishers
 export const publisherAPI = {
-  getAll: (params) => request("GET", "/publishers", null, params),
-  getById: (id) => request("GET", `/publishers/${id}`),
-  create: (body) => request("POST", "/publishers", body),
-  update: (id, body) => request("PUT", `/publishers/${id}`, body),
-  delete: (id) => request("DELETE", `/publishers/${id}`),
+  getAll: (params, options) =>
+    request("GET", "/publishers", null, params, options),
+  getById: (id, options) =>
+    request("GET", `/publishers/${id}`, null, null, options),
 };
 
-// Cart
+export const adminAPI = {
+  books: {
+    create: (body) => request("POST", "/admin/books", body),
+    update: (id, body) => request("PUT", `/admin/books/${id}`, body),
+    delete: (id) => request("DELETE", `/admin/books/${id}`),
+  },
+  categories: {
+    create: (body) => request("POST", "/admin/categories", body),
+    update: (id, body) => request("PUT", `/admin/categories/${id}`, body),
+    delete: (id) => request("DELETE", `/admin/categories/${id}`),
+  },
+  authors: {
+    create: (body) => request("POST", "/admin/authors", body),
+    update: (id, body) => request("PUT", `/admin/authors/${id}`, body),
+    delete: (id) => request("DELETE", `/admin/authors/${id}`),
+  },
+  publishers: {
+    create: (body) => request("POST", "/admin/publishers", body),
+    update: (id, body) => request("PUT", `/admin/publishers/${id}`, body),
+    delete: (id) => request("DELETE", `/admin/publishers/${id}`),
+  },
+  orders: {
+    getAll: (params) => request("GET", "/admin/orders", null, params),
+    getById: (id) => request("GET", `/admin/orders/${id}`),
+    updateStatus: (id, status) =>
+      request("PATCH", `/admin/orders/${id}/status`, null, { status }),
+    updatePayment: (id, paymentStatus) =>
+      request("PATCH", `/admin/orders/${id}/payment`, { paymentStatus }),
+  },
+  coupons: {
+    getAll: () => request("GET", "/admin/coupons"),
+    getById: (id) => request("GET", `/admin/coupons/${id}`),
+    create: (body) => request("POST", "/admin/coupons", body),
+    update: (id, body) => request("PUT", `/admin/coupons/${id}`, body),
+    delete: (id) => request("DELETE", `/admin/coupons/${id}`),
+  },
+};
+
 export const cartAPI = {
   get: () => request("GET", "/cart"),
   addItem: (body) => request("POST", "/cart/items", body),
@@ -116,7 +204,6 @@ export const cartAPI = {
   clear: () => request("DELETE", "/cart"),
 };
 
-// Orders
 export const orderAPI = {
   create: (body) => request("POST", "/orders/checkout", body),
   getMyOrders: (params) => request("GET", "/orders", null, params),
@@ -124,13 +211,11 @@ export const orderAPI = {
   cancel: (id) => request("PATCH", `/orders/${id}/cancel`),
 };
 
-// Coupons
 export const couponAPI = {
   validate: (code, subtotal) =>
     request("GET", "/coupons/preview", null, { code, subtotal }),
 };
 
-// Address
 export const addressAPI = {
   getAll: () => request("GET", "/addresses"),
   create: (body) => request("POST", "/addresses", body),
@@ -139,7 +224,6 @@ export const addressAPI = {
   setDefault: (id) => request("PATCH", `/addresses/${id}/default`),
 };
 
-// Reviews
 export const reviewAPI = {
   getByBook: (bookId, params) =>
     request("GET", `/reviews/book/${bookId}`, null, params),

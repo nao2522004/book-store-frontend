@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { bookAPI, categoryAPI } from '../api';
 import BookCard from '../components/book/BookCard';
-import { Spinner, Empty } from '../components/common';
+import { Empty } from '../components/common';
+import { BookCardSkeletonGrid } from '../components/book/BookCardSkeleton';
 
 //  HOA TIẾT PHÂN ĐOẠN VĂN BẢN 
 function OrnamentalDivider({ color = "#8B6508" }) {
@@ -79,8 +80,8 @@ export default function HomePage() {
       setLoading(true);
       try {
         const [booksRes, catsRes] = await Promise.all([
-          bookAPI.getAll({ page: 0, size: 6, sort: 'createdAt,desc' }),
-          categoryAPI.getAll({ page: 0, size: 6 }),
+          bookAPI.getAll({ page: 1, size: 6, sortBy: 'createdAt', sortDir: 'desc' }),
+          categoryAPI.getAll({ page: 1, size: 6 }),
         ]);
         setNewBooks(booksRes.data?.content || []);
         setCategories(catsRes.data?.content || catsRes.data || []);
@@ -204,7 +205,7 @@ export default function HomePage() {
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-16"><Spinner size="md" /></div>
+                <BookCardSkeletonGrid count={6} />
               ) : newBooks.length === 0 ? (
                 <div className="bg-[#FAF3E3] py-16 border border-dashed border-[#C4B498] text-center rounded-[2px]"><Empty message="Chưa có bản thảo mới." /></div>
               ) : (

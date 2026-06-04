@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { bookAPI, categoryAPI } from '../api';
 import BookCard from '../components/book/BookCard';
-import { Spinner, Pagination, Empty } from '../components/common';
+import { Pagination, Empty } from '../components/common';
+import { BookCardSkeletonGrid } from '../components/book/BookCardSkeleton';
 
 const SORT_OPTIONS = [
   { value: 'createdAt,desc', label: 'Tác Phẩm Mới' },
@@ -16,7 +17,6 @@ export default function BooksPage() {
   const [books, setBooks] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [filters, setFilters] = useState({
     keyword: searchParams.get('keyword') || '',
     categoryId: searchParams.get('categoryId') || '',
@@ -118,13 +118,6 @@ export default function BooksPage() {
     </div>
   );
 
-  const paginationData = books ? {
-    ...books,
-    number: books.page || 1,
-    last: !books.hasNext,
-    first: !books.hasPrevious,
-    totalPages: books.totalPages,
-  } : null;
 
   return (
     <div className="bg-[#FAF5EC] min-h-screen text-[#2C2114] selection:bg-[#E6CE9A]/50 pb-20">
@@ -191,7 +184,7 @@ export default function BooksPage() {
 
           <div className="flex-1 min-w-0">
             {loading ? (
-              <div className="flex justify-center py-28"><Spinner size="lg" /></div>
+              <BookCardSkeletonGrid count={filters.size} />
             ) : books?.content?.length === 0 ? (
               <div className="bg-[#FAF5EC] border border-[#D4C4A8] py-16 px-4 text-center shadow-sm relative">
                 <div className="absolute inset-1.5 border border-[#8B6508]/10 pointer-events-none" />
@@ -213,7 +206,7 @@ export default function BooksPage() {
 
                 <div className="mt-12 pt-6 border-t border-[#D4C4A8]/40">
                   <Pagination
-                    data={paginationData}
+                    data={books}
                     onPageChange={p => setFilters(f => ({ ...f, page: p }))}
                   />
                 </div>

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+export { default as ErrorBoundary } from './ErrorBoundary';
+
 export function Toast({ toasts }) {
   return (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 max-w-sm">
@@ -39,11 +41,11 @@ export function LoadingPage() {
 
 export function Pagination({ data, onPageChange }) {
   if (!data || data.totalPages <= 1) return null;
-  const { number: page, totalPages } = data;
+  const { page = 1, totalPages, hasNext, hasPrevious } = data;
 
   const pages = [];
-  const start = Math.max(0, page - 2);
-  const end = Math.min(totalPages - 1, page + 2);
+  const start = Math.max(1, page - 2);
+  const end = Math.min(totalPages, page + 2);
   for (let i = start; i <= end; i++) pages.push(i);
 
   const btnClass = "h-9 px-3 border border-[#D4C4A8] text-xs font-bold uppercase tracking-wider text-[#2C2114] hover:text-[#FAF5EC] relative overflow-hidden transition-all duration-300 before:absolute before:inset-0 before:bg-[#2C2114] before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-250 disabled:opacity-30 disabled:before:hidden disabled:hover:text-[#2C2114] flex items-center justify-center rounded-[1px]";
@@ -51,17 +53,17 @@ export function Pagination({ data, onPageChange }) {
   return (
     <div className="flex items-center justify-center gap-1.5 mt-10 select-none" style={{ fontFamily: "'Cinzel', serif" }}>
       <button
-        disabled={page === 0}
+        disabled={!hasPrevious}
         onClick={() => onPageChange(page - 1)}
         className={btnClass}
       >
         <span className="relative z-10">← Trước</span>
       </button>
 
-      {start > 0 && (
+      {start > 1 && (
         <>
           <button
-            onClick={() => onPageChange(0)}
+            onClick={() => onPageChange(1)}
             className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
           >
             1
@@ -79,15 +81,15 @@ export function Pagination({ data, onPageChange }) {
             : 'border border-[#D4C4A8]/60 text-stone-600 hover:border-[#2C2114] hover:text-[#2C2114]'
             }`}
         >
-          {p + 1}
+          {p}
         </button>
       ))}
 
-      {end < totalPages - 1 && (
+      {end < totalPages && (
         <>
           <span className="text-stone-400 px-1 text-xs">...</span>
           <button
-            onClick={() => onPageChange(totalPages - 1)}
+            onClick={() => onPageChange(totalPages)}
             className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
           >
             {totalPages}
@@ -96,7 +98,7 @@ export function Pagination({ data, onPageChange }) {
       )}
 
       <button
-        disabled={data.last}
+        disabled={!hasNext}
         onClick={() => onPageChange(page + 1)}
         className={btnClass}
       >
