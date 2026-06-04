@@ -20,8 +20,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [addrErrors, setAddrErrors] = useState({});
 
-  // ─── ĐÃ FIX: Khởi tạo kèm trạng thái isDefault ───────────
   const [newAddr, setNewAddr] = useState({
     fullName: '', phone: '', street: '', province: '', district: '', ward: '',
     isDefault: false
@@ -75,14 +75,27 @@ export default function CheckoutPage() {
     }
   };
 
-  // ─── ĐÃ FIX: Ép kiểu dữ liệu an toàn trước khi bắn API ───────────
+  const validateAddrField = (key, value) => {
+    if (!value?.trim()) return 'Không được để trống';
+    if (key === 'phone' && !PHONE_REGEX.test(value))
+      return 'Số điện thoại không hợp lệ (9-10 số, đầu 03/05/07/08/09)';
+    return '';
+  };
+
+  const handleAddrChange = (key, value) => {
+    setNewAddr(a => ({ ...a, [key]: value }));
+    setAddrErrors(e => ({ ...e, [key]: validateAddrField(key, value) }));
+  };
+
+  const PHONE_REGEX = /^(0[35789])[0-9]{7,8}$/;
   const handleAddAddress = async (e) => {
     e.preventDefault();
+    if (!PHONE_REGEX.test(newAddr.phone)) {
+      setError('Số điện thoại không hợp lệ (9-10 số, bắt đầu bằng 03/05/07/08/09)');
+      return;
+    }
     try {
-      const payload = {
-        ...newAddr,
-        isDefault: !!newAddr.isDefault
-      };
+      const payload = { ...newAddr, isDefault: !!newAddr.isDefault };
       const res = await addressAPI.create(payload);
       setAddresses(a => [...a, res.data]);
       setSelectedAddress(res.data.id);
@@ -194,13 +207,18 @@ export default function CheckoutPage() {
                       <input
                         required
                         value={newAddr[f.key]}
-                        onChange={e => setNewAddr(a => ({ ...a, [f.key]: e.target.value }))}
-                        className="w-full bg-[#FAF5EC] border border-[#D4C4A8] rounded-[1px] px-3 py-2 text-sm focus:outline-none focus:border-[#8B6508] text-[#140E0A]"
+                        onChange={e => handleAddrChange(f.key, e.target.value)}
+                        className={`w-full bg-[#FAF5EC] border rounded-[1px] px-3 py-2 text-sm focus:outline-none text-[#140E0A] transition-colors ${addrErrors[f.key]
+                          ? 'border-red-400 focus:border-red-600'
+                          : 'border-[#D4C4A8] focus:border-[#8B6508]'
+                          }`}
                       />
+                      {addrErrors[f.key] && (
+                        <p className="text-red-600 text-[10px] font-serif italic mt-1">{addrErrors[f.key]}</p>
+                      )}
                     </div>
                   ))}
 
-                  {/* ─── ĐÃ FIX: Thêm UI Checkbox chọn mặc định địa sở ─── */}
                   <div className="col-span-2 flex items-center gap-2 py-1 relative z-10">
                     <input
                       type="checkbox"

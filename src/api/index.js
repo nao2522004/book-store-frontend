@@ -15,17 +15,27 @@ const headers = (isJson = true) => {
   return h;
 };
 
+//  Refresh logic
+// refreshPromise dedup: nếu nhiều request cùng nhận 401 đồng thời,
+// chỉ gọi /auth/refresh 1 lần, tất cả cùng chờ promise đó.
 let refreshPromise = null;
+
+// Callback để AuthContext đăng ký — gọi khi refresh thất bại hoàn toàn
+let onAuthFailure = null;
+export const setAuthFailureHandler = (fn) => {
+  onAuthFailure = fn;
+};
 
 const refreshAccessToken = async () => {
   if (refreshPromise) return refreshPromise;
+
   refreshPromise = (async () => {
     const res = await fetch(`${BASE_URL}/auth/refresh`, {
       method: "POST",
-      headers: headers(),
-      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // gửi HttpOnly cookie refreshToken
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setToken(null);
       throw new Error(data.message || "Phiên đăng nhập đã hết hạn");
@@ -33,6 +43,7 @@ const refreshAccessToken = async () => {
     setToken(data.data.accessToken);
     return data.data.accessToken;
   })();
+
   try {
     return await refreshPromise;
   } finally {
@@ -40,6 +51,7 @@ const refreshAccessToken = async () => {
   }
 };
 
+//  Core request
 const AUTH_PATHS = new Set([
   "/auth/login",
   "/auth/register",
@@ -74,25 +86,29 @@ const request = async (
 
   const data = await res.json().catch(() => ({}));
 
-  if (
-    res.status === 401 &&
-    !retried &&
-    !AUTH_PATHS.has(path) &&
-    getToken()
-  ) {
+  //  Silent refresh
+  if (res.status === 401 && !retried && !AUTH_PATHS.has(path) && getToken()) {
     try {
       await refreshAccessToken();
+      // Retry request gốc với token mới (headers() sẽ tự đọc token mới)
       return request(method, path, body, params, { retried: true, signal });
     } catch (err) {
-      setToken(null);
+      // Refresh thất bại → báo AuthContext logout UI
+      onAuthFailure?.();
       throw err;
     }
+  }
+
+  //  401 không có token (chưa đăng nhập) → không cần xử lý
+  if (res.status === 401 && !getToken()) {
+    onAuthFailure?.();
   }
 
   if (!res.ok) throw new Error(data.message || "Request failed");
   return data;
 };
 
+//  Decode JWT
 const decodeJwt = (token) => {
   try {
     const payload = token.split(".")[1];
@@ -118,6 +134,7 @@ const decodeJwt = (token) => {
   }
 };
 
+//  API exports
 export const authAPI = {
   login: (body) => request("POST", "/auth/login", body),
   register: (body) => request("POST", "/auth/register", body),
@@ -146,7 +163,8 @@ export const categoryAPI = {
 };
 
 export const authorAPI = {
-  getAll: (params, options) => request("GET", "/authors", null, params, options),
+  getAll: (params, options) =>
+    request("GET", "/authors", null, params, options),
   getById: (id, options) =>
     request("GET", `/authors/${id}`, null, null, options),
 };

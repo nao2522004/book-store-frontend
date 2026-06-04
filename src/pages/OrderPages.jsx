@@ -81,7 +81,11 @@ export function OrdersPage() {
             </div>
 
             <div className="mt-8">
-              <Pagination data={orders} onPageChange={setPage} />
+              <Pagination
+                data={orders}
+                onPageChange={setPage}
+                currentPage={page}
+              />
             </div>
           </>
         )}

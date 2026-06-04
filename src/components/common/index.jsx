@@ -39,9 +39,10 @@ export function LoadingPage() {
   );
 }
 
-export function Pagination({ data, onPageChange }) {
+export function Pagination({ data, onPageChange, currentPage }) {
   if (!data || data.totalPages <= 1) return null;
-  const { page = 1, totalPages, hasNext, hasPrevious } = data;
+  const { totalPages, hasNext, hasPrevious } = data;
+  const page = currentPage ?? data.page ?? 1;
 
   const pages = [];
   const start = Math.max(1, page - 2);
@@ -52,22 +53,13 @@ export function Pagination({ data, onPageChange }) {
 
   return (
     <div className="flex items-center justify-center gap-1.5 mt-10 select-none" style={{ fontFamily: "'Cinzel', serif" }}>
-      <button
-        disabled={!hasPrevious}
-        onClick={() => onPageChange(page - 1)}
-        className={btnClass}
-      >
+      <button disabled={!hasPrevious} onClick={() => onPageChange(page - 1)} className={btnClass}>
         <span className="relative z-10">← Trước</span>
       </button>
 
       {start > 1 && (
         <>
-          <button
-            onClick={() => onPageChange(1)}
-            className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
-          >
-            1
-          </button>
+          <button onClick={() => onPageChange(1)} className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors">1</button>
           <span className="text-stone-400 px-1 text-xs">...</span>
         </>
       )}
@@ -88,20 +80,11 @@ export function Pagination({ data, onPageChange }) {
       {end < totalPages && (
         <>
           <span className="text-stone-400 px-1 text-xs">...</span>
-          <button
-            onClick={() => onPageChange(totalPages)}
-            className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors"
-          >
-            {totalPages}
-          </button>
+          <button onClick={() => onPageChange(totalPages)} className="w-9 h-9 border border-[#D4C4A8]/60 text-xs font-medium text-stone-500 hover:text-[#8B6508] transition-colors">{totalPages}</button>
         </>
       )}
 
-      <button
-        disabled={!hasNext}
-        onClick={() => onPageChange(page + 1)}
-        className={btnClass}
-      >
+      <button disabled={!hasNext} onClick={() => onPageChange(page + 1)} className={btnClass}>
         <span className="relative z-10">Sau →</span>
       </button>
     </div>
