@@ -1,11 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export function useAsync(asyncFn, deps = []) {
-  const [state, setState] = useState({ data: null, loading: true, error: null });
+  const [state, setState] = useState({
+    data: null,
+    loading: true,
+    error: null,
+  });
   const mountedRef = useRef(true);
 
   const execute = useCallback(async (...args) => {
-    setState(s => ({ ...s, loading: true, error: null }));
+    setState((s) => ({ ...s, loading: true, error: null }));
     try {
       const data = await asyncFn(...args);
       if (mountedRef.current) {
@@ -14,17 +18,19 @@ export function useAsync(asyncFn, deps = []) {
       return data;
     } catch (err) {
       if (mountedRef.current) {
-        setState(s => ({ ...s, loading: false, error: err.message }));
+        setState((s) => ({ ...s, loading: false, error: err.message }));
       }
       throw err;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
   useEffect(() => {
     mountedRef.current = true;
     execute();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, [execute]);
 
   return { ...state, refetch: execute };
@@ -38,27 +44,30 @@ export function usePagination(fetchFn, initialParams = {}) {
   const mountedRef = useRef(true);
   const abortRef = useRef(null);
 
-  const fetch = useCallback(async (p = params) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const fetch = useCallback(
+    async (p = params) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetchFn(p, { signal: controller.signal });
-      if (mountedRef.current && !controller.signal.aborted) {
-        setData(res.data);
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchFn(p, { signal: controller.signal });
+        if (mountedRef.current && !controller.signal.aborted) {
+          setData(res.data);
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        if (mountedRef.current) setError(err.message);
+      } finally {
+        if (mountedRef.current && abortRef.current === controller) {
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      if (mountedRef.current) setError(err.message);
-    } finally {
-      if (mountedRef.current && abortRef.current === controller) {
-        setLoading(false);
-      }
-    }
-  }, [fetchFn, params]);
+    },
+    [fetchFn, params],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -69,20 +78,30 @@ export function usePagination(fetchFn, initialParams = {}) {
     };
   }, [params]);
 
-  const setPage = (page) => setParams(p => ({ ...p, page }));
-  const setSize = (size) => setParams(p => ({ ...p, size, page: 1 }));
-  const updateParams = (newParams) => setParams(p => ({ ...p, ...newParams, page: 1 }));
+  const setPage = (page) => setParams((p) => ({ ...p, page }));
+  const setSize = (size) => setParams((p) => ({ ...p, size, page: 1 }));
+  const updateParams = (newParams) =>
+    setParams((p) => ({ ...p, ...newParams, page: 1 }));
 
-  return { data, loading, error, params, setPage, setSize, updateParams, refetch: fetch };
+  return {
+    data,
+    loading,
+    error,
+    params,
+    setPage,
+    setSize,
+    updateParams,
+    refetch: fetch,
+  };
 }
 
 export function useToast() {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = 'success') => {
+  const addToast = useCallback((message, type = "success") => {
     const id = Date.now();
-    setToasts(t => [...t, { id, message, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3000);
+    setToasts((t) => [...t, { id, message, type }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000);
   }, []);
 
   return { toasts, addToast };

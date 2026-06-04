@@ -137,7 +137,7 @@
 
 ---
 
-### B3. LỖI LOGIC PHÂN TRANG
+### B3. LỖI LOGIC PHÂN TRANG (Page chưa được fix đúng số hay sao ớ)
 
 ---
 
@@ -201,11 +201,11 @@
 
 ## 📊 TỔNG KẾT ƯU TIÊN
 
-| Mức độ | Số lượng | Ghi chú |
-|--------|----------|---------|
-| 🔴 Cao | 14 | Cần giải quyết trước khi demo/production |
-| 🟠 Trung bình | 10 | Hoàn thiện trong sprint tiếp theo |
-| 🟡 Thấp | 4 | Nice-to-have, làm sau khi ổn định |
+| Mức độ        | Số lượng | Ghi chú                                  |
+| ------------- | -------- | ---------------------------------------- |
+| 🔴 Cao        | 14       | Cần giải quyết trước khi demo/production |
+| 🟠 Trung bình | 10       | Hoàn thiện trong sprint tiếp theo        |
+| 🟡 Thấp       | 4        | Nice-to-have, làm sau khi ổn định        |
 
 ---
 
