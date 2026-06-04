@@ -208,6 +208,7 @@ export default function BooksPage() {
                   <Pagination
                     data={books}
                     onPageChange={p => setFilters(f => ({ ...f, page: p }))}
+                    currentPage={filters.page}
                   />
                 </div>
               </>

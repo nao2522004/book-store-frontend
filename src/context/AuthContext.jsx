@@ -1,11 +1,26 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI } from '../api';
+import { authAPI, setAuthFailureHandler } from '../api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const logout = useCallback(async () => {
+    try { await authAPI.logout(); } catch (_) { }
+    localStorage.removeItem('accessToken');
+    setUser(null);
+  }, []);
+
+  // Đăng ký callback: khi api/index.js phát hiện refresh thất bại
+  // → tự động logout UI mà không cần user làm gì
+  useEffect(() => {
+    setAuthFailureHandler(() => {
+      localStorage.removeItem('accessToken');
+      setUser(null);
+    });
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -28,14 +43,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (data) => {
-    const res = await authAPI.register(data);
-    return res;
-  }, []);
-
-  const logout = useCallback(async () => {
-    try { await authAPI.logout(); } catch (_) {}
-    localStorage.removeItem('accessToken');
-    setUser(null);
+    return authAPI.register(data);
   }, []);
 
   return (
